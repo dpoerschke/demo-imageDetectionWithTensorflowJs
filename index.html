@@ -1,0 +1,149 @@
+<html>
+    <head>
+        <!-- Load TensorFlow.js. This is required to use MobileNet. -->
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"> </script>
+
+        <!-- Load the MobileNet model. -->
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"> </script>
+
+        <!-- Load the coco-ssd model. -->
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
+
+        <!-- Bootstrap -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>        
+
+    </head>
+    <body>
+    
+        <div class="jumbotron">
+            <h1 class="display-4">Image detection with Tensorflow.js</h1>
+            <p class="lead">This is a demonstration for AI-supported image recognition in the browser (without web service in the background).<br>
+                The recognition is done by means of Machine Learning (ML). In this case TensorFlow.js is used with two pre-trained data models "Mobilenet" and "coco-ssd" (ssd: Single Shot MultiBox Detection).
+            </p>
+            <hr class="my-4">
+            Read more about pre-trained models here: <a href="https://www.tensorflow.org/js/models">https://www.tensorflow.org/js/models</a><br>
+            Image in this demo: <a style="background-color:black;color:white;text-decoration:none;padding:4px 6px;font-family:-apple-system, BlinkMacSystemFont, &quot;San Francisco&quot;, &quot;Helvetica Neue&quot;, Helvetica, Ubuntu, Roboto, Noto, &quot;Segoe UI&quot;, Arial, sans-serif;font-size:12px;font-weight:bold;line-height:1.2;display:inline-block;border-radius:3px" href="https://unsplash.com/@michaeldaughertyco?utm_medium=referral&amp;utm_campaign=photographer-credit&amp;utm_content=creditBadge" target="_blank" rel="noopener noreferrer" title="Download free do whatever you want high-resolution photos from Michael Daugherty"><span style="display:inline-block;padding:2px 3px"><svg xmlns="http://www.w3.org/2000/svg" style="height:12px;width:auto;position:relative;vertical-align:middle;top:-2px;fill:white" viewBox="0 0 32 32"><title>unsplash-logo</title><path d="M10 9V0h12v9H10zm12 5h10v18H0V14h10v9h12v-9z"></path></svg></span><span style="display:inline-block;padding:2px 3px">Michael Daugherty</span></a>
+        </div>
+    
+
+        <!-- Replace this with your image. Make sure CORS settings allow reading the image! -->
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12 col-lg-6">
+                    <h2>Image classification <span class="badge badge-secondary">mobilenet</span></h2>
+                    <img id="img" class="img-fluid" src="./pic1.jpg"></img>
+                    <table class="table">
+                        <tr>
+                            <th scope="col">Klassifizierung</th>
+                            <th scope="col">Wahrscheinlichkeit</th>
+                        </tr>
+                        <tbody id="prediction"></tbody>
+                    </table>
+                </div>
+
+                <div class="col-md-12 col-lg-6">
+                    <h2>Object detection <span class="badge badge-secondary">coco-ssd</span></h2>
+                    <canvas id="myCanvas" >
+                </div>
+            </div>
+        </div>
+
+        <div id="infotext" class="modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title">Bitte warten</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="spinner-border" role="status"></div>
+                    Bilderkennung wird durchgeführt..
+                </div>
+              </div>
+            </div>
+          </div>
+          
+    <script>
+        const img = document.getElementById('img');
+        const pred = document.getElementById('prediction');
+
+        window.onload = function() {
+            var c = document.getElementById("myCanvas");
+            c.width = img.width;
+            c.height = img.height;
+
+            $('#infotext').modal('show')
+            
+            var ctx = c.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+        }
+
+        // Load the model.
+        mobilenet.load().then(model => {
+            // Classify the image.
+            model.classify(img).then(predictions => {
+                console.log('Predictions Mobilenet: ');
+                console.log(predictions);
+                
+                pred.innerHTML = predictions.map(x => {
+                    return "<tr scope='row'><td>"+ x.className + "</td><td>" + x.probability + "</td></tr>";
+                }).join('');
+
+            });
+        });
+
+        // ----------------------- Coco ssd ---------------------------------
+
+        // Load the model.
+        cocoSsd.load().then(model => {
+            // detect objects in the image.
+            model.detect(img).then(predictions => {
+                $('#infotext').modal('hide')
+                console.log('Predictions Coco-ssd: ', predictions);
+                showDetections(predictions);
+            });
+        });
+        
+
+        // border
+        showDetections = predictions => {
+
+            var c = document.getElementById("myCanvas");
+            const ctx = c.getContext("2d");
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            const font = "24px helvetica";
+            ctx.font = font;
+            ctx.textBaseline = "top";
+            ctx.drawImage(img, 10, 10);
+
+            predictions.forEach(prediction => {
+                const x = prediction.bbox[0];
+                const y = prediction.bbox[1];
+                const width = prediction.bbox[2];
+                const height = prediction.bbox[3];
+                // Draw the bounding box.
+                ctx.strokeStyle = "#2fff00";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, width, height);
+                // Draw the label background.
+                ctx.fillStyle = "#2fff00";
+                const textWidth = ctx.measureText(prediction.class).width;
+                const textHeight = parseInt(font, 8);
+                // draw top left rectangle
+                ctx.fillRect(x, y, textWidth + 10, textHeight + 10);
+                // draw bottom left rectangle
+                ctx.fillRect(x, y + height - textHeight, textWidth + 15, textHeight + 10);
+
+                // Draw the text last to ensure it's on top.
+                ctx.fillStyle = "#000000";
+                ctx.fillText(prediction.class, x, y);
+                ctx.fillText(prediction.score.toFixed(2), x, y + height - textHeight);
+            });
+        };
+
+    </script>
+
+    </body>
+</html>

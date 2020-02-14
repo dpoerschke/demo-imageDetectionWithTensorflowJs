@@ -1,0 +1,15 @@
+{
+  "name": "bilderkennungs-demo",
+  "version": "1.0.0",
+  "description": "KI-gestützt Bilderkennung ohne Server direkt im Browser",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dirk Pörschke, SIT GmbH",
+  "license": "ISC",
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^1.5.2",
+    "http-server": "^0.12.1"
+  }
+}
